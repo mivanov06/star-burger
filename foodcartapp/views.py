@@ -1,8 +1,10 @@
 from django.http import JsonResponse
 from django.templatetags.static import static
-
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import Product
+from .serializers import OrderSerializer
 
 
 def banners_list_api(request):
@@ -57,6 +59,11 @@ def product_list_api(request):
     })
 
 
-def register_order(request):
-    # TODO это лишь заглушка
-    return JsonResponse({})
+class CreateOrderView(APIView):
+    serializer_class = OrderSerializer
+
+    def post(self, request):
+        order = OrderSerializer(data=request.data)
+        order.is_valid(raise_exception=True)
+        order.save()
+        return Response(order.data)

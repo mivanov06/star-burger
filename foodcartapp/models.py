@@ -1,5 +1,6 @@
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class Restaurant(models.Model):
@@ -121,3 +122,68 @@ class RestaurantMenuItem(models.Model):
 
     def __str__(self):
         return f"{self.restaurant.name} - {self.product.name}"
+
+
+class Order(models.Model):
+    firstname = models.CharField(
+        max_length=100,
+        verbose_name='имя',
+        default=''
+    )
+    lastname = models.CharField(
+        max_length=100,
+        verbose_name='фамилия',
+        default=''
+    )
+    phonenumber = PhoneNumberField(
+        verbose_name='телефон',
+        db_index=True,
+        default=''
+    )
+    address = models.CharField(
+        verbose_name='Адрес доставки',
+        max_length=200,
+        default=''
+    )
+
+    class Meta:
+        verbose_name = 'заказ'
+        verbose_name_plural = 'заказы'
+
+    def __str__(self):
+
+        return f"{self.firstname} {self.lastname} - адрес({self.address})"
+
+
+class ProductOrderItem(models.Model):
+    order = models.ForeignKey(
+        Order,
+        related_name='ordered_items',
+        on_delete=models.CASCADE,
+        verbose_name='заказ',
+        default=0
+    )
+    product = models.ForeignKey(
+        Product,
+        related_name='orders',
+        on_delete=models.CASCADE,
+        verbose_name='товар',
+    )
+    quantity = models.IntegerField(
+        verbose_name='количество',
+        validators=[MinValueValidator(1), MaxValueValidator(500)]
+    )
+    price = models.DecimalField(
+        'цена',
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        default=0
+    )
+
+    class Meta:
+        verbose_name = 'товар в заказе'
+        verbose_name_plural = 'товары в заказах'
+
+    def __str__(self):
+        return f"{self.product} - кол: {self.quantity}"
