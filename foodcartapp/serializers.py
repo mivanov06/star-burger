@@ -33,10 +33,13 @@ class OrderSerializer(serializers.ModelSerializer):
     )
     address = serializers.CharField(
         required=True)
+    total_amount = serializers.FloatField(
+        read_only=True
+    )
 
     class Meta:
         model = Order
-        fields = ("products", "firstname", "lastname", "phonenumber", "address", "id")
+        fields = ("products", "firstname", "lastname", "phonenumber", "address", "id", "total_amount")
         read_only_fields = ("id", *fields)
 
     @atomic
