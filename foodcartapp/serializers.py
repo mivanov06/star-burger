@@ -25,6 +25,9 @@ class OrderSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(
         source='get_status_display'
     )
+    payment_display = serializers.CharField(
+        source='get_payment_display'
+    )
     firstname = serializers.CharField(
         required=True
     )
@@ -45,7 +48,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ("products", "status_display", "firstname", "lastname", "phonenumber", "address",
-                  "comment", "id", "total_amount")
+                  "comment", "id", "total_amount", "payment_display")
         read_only_fields = ("id", *fields)
 
     @atomic
