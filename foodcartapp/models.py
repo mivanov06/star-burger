@@ -135,6 +135,13 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
+    STATUS = (
+        ('in_processing', 'В обработке'),
+        ('on_assembly', 'На сборке'),
+        ('in_delivery', 'В доставке'),
+        ('delivered', 'Доставлен')
+    )
+
     firstname = models.CharField(
         max_length=100,
         verbose_name='имя',
@@ -154,6 +161,15 @@ class Order(models.Model):
         verbose_name='Адрес доставки',
         max_length=200,
         default=''
+    )
+
+    status = models.CharField(
+        verbose_name='Статус заказа',
+        max_length=20,
+        db_index=True,
+        choices=STATUS,
+        default='in_processing'
+
     )
 
     class Meta:
