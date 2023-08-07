@@ -162,15 +162,19 @@ class Order(models.Model):
         max_length=200,
         default=''
     )
-
     status = models.CharField(
         verbose_name='Статус заказа',
         max_length=20,
         db_index=True,
         choices=STATUS,
         default='in_processing'
-
     )
+    comment = models.TextField(
+        verbose_name='Комментарий',
+        max_length=1000,
+        default=''
+    )
+
 
     class Meta:
         verbose_name = 'заказ'
