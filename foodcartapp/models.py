@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db.models import Sum, F
+from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
 
@@ -174,7 +175,21 @@ class Order(models.Model):
         max_length=1000,
         default=''
     )
-
+    created_date = models.DateTimeField(
+        verbose_name="Дата создания",
+        default=timezone.now,
+        db_index=True
+    )
+    called_date = models.DateTimeField(
+        verbose_name="Дата звонка",
+        null=True,
+        blank=True
+    )
+    delivery_date = models.DateTimeField(
+        verbose_name="Дата доставки",
+        null=True,
+        blank=True
+    )
 
     class Meta:
         verbose_name = 'заказ'
