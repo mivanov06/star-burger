@@ -54,7 +54,6 @@ class OrderSerializer(serializers.ModelSerializer):
     @atomic
     def create(self, validated_data):
         ordered_items_data = validated_data.pop("ordered_items")
-        print(validated_data)
         order = Order.objects.create(**validated_data)
         for entity in ordered_items_data:
             ProductOrderItem.objects.create(**entity, order=order)

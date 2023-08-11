@@ -1,3 +1,7 @@
+import copy
+import pprint
+from functools import reduce
+
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db.models import Sum, F
@@ -134,6 +138,38 @@ class OrderQuerySet(models.QuerySet):
         )
         return queryset
 
+    def active(self):
+        queryset = self.exclude(status='delivered')
+        return queryset
+
+    def get_restaurant(self):
+        product_restaurant_menu = RestaurantMenuItem.objects.select_related('product', 'restaurant')
+        for order in self:
+            serialized_restaurants = []
+            for order_product in order.items.all():
+                serialized_restaurants.append([rest_item.restaurant for rest_item in product_restaurant_menu
+                                               if order_product.product_id == rest_item.product.pk])
+            cooking_restaurant = reduce(set.intersection, map(set, serialized_restaurants))
+            order.cooking_restaurant = cooking_restaurant
+        return self
+
+    def get_available_restaurants(self):
+        product_restaurant_menu = RestaurantMenuItem.objects.select_related('product', 'restaurant')
+        print(f'{product_restaurant_menu}=')
+        for order in self:
+            # pprint.pprint(order)
+            prepares_product_restaurants = []
+            for order_product in order.ordered_items.all():
+                prepares_product_restaurants.append([rest_item.restaurant for rest_item in product_restaurant_menu
+                                                    if order_product.product_id == rest_item.product.pk])
+            cooking_restaurants = reduce(set.intersection, map(set, prepares_product_restaurants))
+            order.cooking_restaurants = copy.deepcopy(cooking_restaurants)
+        pprint.pprint(order.cooking_restaurants)
+
+        return self
+
+
+
 
 class Order(models.Model):
     STATUS = (
@@ -144,8 +180,8 @@ class Order(models.Model):
     )
 
     PAYMENT = (
-        ('CASH',    "Наличными при доставке"),
-        ('ONLINE',  "Электронно при создании"),
+        ('cash',    "Наличными при доставке"),
+        ('online',  "Электронно при создании"),
     )
 
     firstname = models.CharField(
@@ -185,6 +221,7 @@ class Order(models.Model):
     comment = models.TextField(
         verbose_name='Комментарий',
         max_length=1000,
+        blank=True,
         default=''
     )
     created_date = models.DateTimeField(
@@ -202,14 +239,33 @@ class Order(models.Model):
         null=True,
         blank=True
     )
+    restaurant = models.ForeignKey(
+        Restaurant,
+        verbose_name='Ресторан, готовящий заказ',
+        null=True,
+        blank=True,
+        related_name='orders',
+        on_delete=models.CASCADE
+    )
 
     class Meta:
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
 
     def __str__(self):
+        return f"{self.firstname} {self.lastname} - адрес ({self.address})"
 
-        return f"{self.firstname} {self.lastname} - адрес({self.address})"
+    def get_available_restaurants(self):
+        available_restaurants = []
+        products = [order_item.product for order_item in self.ordered_items.all()]
+        menu_items = RestaurantMenuItem.objects.filter(availability=True)
+
+        for menu_item in menu_items:
+            if menu_item.product in products:
+                available_restaurants[menu_item.restaurant] += 1
+
+        return [restaurant for restaurant, available_products in available_restaurants.items()
+                if available_products == len(products)]
 
     objects = OrderQuerySet.as_manager()
 

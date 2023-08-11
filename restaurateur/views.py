@@ -93,7 +93,13 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = Order.objects.total_amount().prefetch_related('ordered_items').order_by('pk')
+    # orders = Order.objects.active().total_amount().prefetch_related('ordered_items').get_restaurant().order_by('pk')
+
+    orders = Order.objects.active().total_amount().select_related('restaurant').prefetch_related('ordered_items')\
+        .get_available_restaurants()
+
+
+
     return render(request, template_name='order_items.html', context={
         "order_items": OrderSerializer(orders, many=True).data
     })
