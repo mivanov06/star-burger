@@ -100,6 +100,13 @@ class Product(models.Model):
         return self.name
 
 
+class RestaurantMenuItemQuerySet(models.QuerySet):
+    def available(self):
+        restaurant_menu = self.filter(availability=True) \
+            .select_related('restaurant', 'product')
+        return restaurant_menu
+
+
 class RestaurantMenuItem(models.Model):
     restaurant = models.ForeignKey(
         Restaurant,
@@ -119,6 +126,8 @@ class RestaurantMenuItem(models.Model):
         db_index=True
     )
 
+    objects = RestaurantMenuItemQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'пункт меню ресторана'
         verbose_name_plural = 'пункты меню ресторана'
@@ -134,13 +143,20 @@ class OrderQuerySet(models.QuerySet):
     def total_amount(self):
         queryset = self.annotate(
             total_amount=Sum(
-                F('ordered_items__quantity')*F('ordered_items__price'))
+                F('ordered_items__quantity') * F('ordered_items__price'))
         )
         return queryset
 
     def active(self):
         queryset = self.exclude(status='delivered')
         return queryset
+
+    def prefetch_items(self):
+        prefetch = self.total_amount()\
+            .exclude(status='delivered')\
+            .prefetch_related('items')\
+            .prefetch_related('items__product')
+        return prefetch
 
     def get_restaurant(self):
         product_restaurant_menu = RestaurantMenuItem.objects.select_related('product', 'restaurant')
@@ -154,34 +170,31 @@ class OrderQuerySet(models.QuerySet):
         return self
 
     def get_available_restaurants(self):
-        product_restaurant_menu = RestaurantMenuItem.objects.select_related('product', 'restaurant')
-        print(f'{product_restaurant_menu}=')
+        restaurant_menu_items = RestaurantMenuItem.objects.select_related('product', 'restaurant')
         for order in self:
-            # pprint.pprint(order)
-            prepares_product_restaurants = []
+            order_restaurants = []
             for order_product in order.ordered_items.all():
-                prepares_product_restaurants.append([rest_item.restaurant for rest_item in product_restaurant_menu
-                                                    if order_product.product_id == rest_item.product.pk])
-            cooking_restaurants = reduce(set.intersection, map(set, prepares_product_restaurants))
-            order.cooking_restaurants = copy.deepcopy(cooking_restaurants)
-        pprint.pprint(order.cooking_restaurants)
-
+                product_restaurants = set(
+                    menu_item.restaurant for menu_item in restaurant_menu_items
+                    if order_product.product == menu_item.product and menu_item.availability
+                )
+                order_restaurants.append(product_restaurants)
+            get_available_restaurants = set.intersection(*order_restaurants)
+            order.get_available_restaurants = get_available_restaurants
         return self
-
-
 
 
 class Order(models.Model):
     STATUS = (
-        ('in_processing',   'В обработке'),
-        ('on_assembly',     'На сборке'),
-        ('in_delivery',     'В доставке'),
-        ('delivered',       'Доставлен')
+        ('in_processing', 'В обработке'),
+        ('on_assembly', 'На сборке'),
+        ('in_delivery', 'В доставке'),
+        ('delivered', 'Доставлен')
     )
 
     PAYMENT = (
-        ('cash',    "Наличными при доставке"),
-        ('online',  "Электронно при создании"),
+        ('cash', "Наличными при доставке"),
+        ('online', "Электронно при создании"),
     )
 
     firstname = models.CharField(

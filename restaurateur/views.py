@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 from foodcartapp.serializers import OrderSerializer
 
 
@@ -95,11 +95,36 @@ def view_restaurants(request):
 def view_orders(request):
     # orders = Order.objects.active().total_amount().prefetch_related('ordered_items').get_restaurant().order_by('pk')
 
-    orders = Order.objects.active().total_amount().select_related('restaurant').prefetch_related('ordered_items')\
-        .get_available_restaurants()
+    orders = Order.objects.active().total_amount().select_related('restaurant').prefetch_related('ordered_items')
+    order_items = Order.objects.prefetch_items()
 
+    restaurant_menu_items = RestaurantMenuItem.objects.available()
 
+    # return render(request, template_name='order_items.html', context={
+    #     "order_items": OrderSerializer(orders, many=True).data
+    # })
+
+    # orders = get_orders_suitable_restaurants_with_locations(
+    #     Order.objects.fetch_with_price().suitable_restaurants()
+    # )
+    # return render(request, template_name='order_items.html', context={
+    #     'order_items': orders
+    # })
+
+    for order in order_items:
+        order.restaurants = set()
+
+        for order_item in order.items.all():
+            product_restaurants = [
+                rest_item.restaurant for rest_item in restaurant_menu_items
+                if order_item.product.id == rest_item.product.id
+            ]
+
+            if not order.restaurants:
+                order.restaurants = set(product_restaurants)
+                continue
+            order.restaurants &= set(product_restaurants)
 
     return render(request, template_name='order_items.html', context={
-        "order_items": OrderSerializer(orders, many=True).data
+        'order_items': order_items,
     })
