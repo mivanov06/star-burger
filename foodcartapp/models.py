@@ -33,16 +33,6 @@ class Restaurant(models.Model):
         return self.name
 
 
-class ProductQuerySet(models.QuerySet):
-    def available(self):
-        products = (
-            RestaurantMenuItem.objects
-            .filter(availability=True)
-            .values_list('product')
-        )
-        return self.filter(pk__in=products)
-
-
 class ProductCategory(models.Model):
     name = models.CharField(
         'название',
@@ -55,6 +45,16 @@ class ProductCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ProductQuerySet(models.QuerySet):
+    def available(self):
+        products = (
+            RestaurantMenuItem.objects
+            .filter(availability=True)
+            .values_list('product')
+        )
+        return self.filter(pk__in=products)
 
 
 class Product(models.Model):
@@ -143,7 +143,7 @@ class OrderQuerySet(models.QuerySet):
     def total_amount(self):
         queryset = self.annotate(
             total_amount=Sum(
-                F('ordered_items__quantity') * F('ordered_items__price'))
+                F('items__quantity') * F('items__price'))
         )
         return queryset
 
@@ -152,9 +152,7 @@ class OrderQuerySet(models.QuerySet):
         return queryset
 
     def prefetch_items(self):
-        prefetch = self.total_amount()\
-            .exclude(status='delivered')\
-            .prefetch_related('items')\
+        prefetch = self.total_amount().exclude(status='delivered').prefetch_related('items')\
             .prefetch_related('items__product')
         return prefetch
 
@@ -286,7 +284,7 @@ class Order(models.Model):
 class ProductOrderItem(models.Model):
     order = models.ForeignKey(
         Order,
-        related_name='ordered_items',
+        related_name='items',
         on_delete=models.CASCADE,
         verbose_name='заказ',
         default=0

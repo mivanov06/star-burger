@@ -93,25 +93,12 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    # orders = Order.objects.active().total_amount().prefetch_related('ordered_items').get_restaurant().order_by('pk')
 
-    orders = Order.objects.active().total_amount().select_related('restaurant').prefetch_related('ordered_items')
-    order_items = Order.objects.prefetch_items()
+    orders = Order.objects.prefetch_items()
 
     restaurant_menu_items = RestaurantMenuItem.objects.available()
 
-    # return render(request, template_name='order_items.html', context={
-    #     "order_items": OrderSerializer(orders, many=True).data
-    # })
-
-    # orders = get_orders_suitable_restaurants_with_locations(
-    #     Order.objects.fetch_with_price().suitable_restaurants()
-    # )
-    # return render(request, template_name='order_items.html', context={
-    #     'order_items': orders
-    # })
-
-    for order in order_items:
+    for order in orders:
         order.restaurants = set()
 
         for order_item in order.items.all():
@@ -126,5 +113,5 @@ def view_orders(request):
             order.restaurants &= set(product_restaurants)
 
     return render(request, template_name='order_items.html', context={
-        'order_items': order_items,
+        'order_items': orders,
     })
