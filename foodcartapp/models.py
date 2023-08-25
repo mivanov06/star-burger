@@ -1,5 +1,3 @@
-import copy
-import pprint
 from functools import reduce
 
 from django.db import models
@@ -141,10 +139,7 @@ class RestaurantMenuItem(models.Model):
 
 class OrderQuerySet(models.QuerySet):
     def total_amount(self):
-        queryset = self.annotate(
-            total_amount=Sum(
-                F('items__quantity') * F('items__price'))
-        )
+        queryset = self.annotate(total_amount=Sum(F('items__quantity') * F('items__price')))
         return queryset
 
     def active(self):
@@ -313,3 +308,37 @@ class ProductOrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product} - кол: {self.quantity}"
+
+
+class Place(models.Model):
+    address = models.CharField(
+        verbose_name='Адрес доставки',
+        max_length=200,
+        unique=True,
+    )
+    lat = models.DecimalField(
+        verbose_name='Широта',
+        decimal_places=3,
+        max_digits=9,
+        blank=True,
+        null=True,
+    )
+    lon = models.DecimalField(
+        verbose_name='Долгота',
+        decimal_places=3,
+        max_digits=9,
+        blank=True,
+        null=True,
+    )
+
+    updated_time = models.DateTimeField(
+        'Дата обновления',
+        default=timezone.now
+    )
+
+    class Meta:
+        verbose_name = 'Место'
+        verbose_name_plural = 'Места'
+
+    def __str__(self):
+        return self.address

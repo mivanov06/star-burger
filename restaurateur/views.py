@@ -1,3 +1,4 @@
+import requests
 from django import forms
 from django.shortcuts import redirect, render
 from django.views import View
@@ -6,10 +7,10 @@ from django.contrib.auth.decorators import user_passes_test
 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
+from geopy.distance import distance
 
-
-from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
-from foodcartapp.serializers import OrderSerializer
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem, Place
+from star_burger import settings
 
 
 class Login(forms.Form):
@@ -91,16 +92,53 @@ def view_restaurants(request):
     })
 
 
+def fetch_coordinates(apikey, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    try:
+        response = requests.get(base_url, params={
+            "geocode": address,
+            "apikey": apikey,
+            "format": "json",
+        })
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        print('HTTP Error occured. Response is: {content}'.format(content=err.response.content))
+
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lon, lat
+
+
+def get_coordinates(address):
+    place, created = Place.objects.get_or_create(address=address)
+    if not created:
+        return place.lat, place.lon
+    yandex_geo_key = settings.YANDEX_GEO_KEY
+    place.lat, place.lon = None, None
+    try:
+        coords = fetch_coordinates(yandex_geo_key, address)
+        if coords:
+            place.lat, place.lon = coords
+    except Exception as err:
+        print('Error occured')
+        print('Response is: {content}'.format(content=err.response.content))
+    place.save()
+    return place.lat, place.lon
+
+
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
 
     orders = Order.objects.prefetch_items()
-
     restaurant_menu_items = RestaurantMenuItem.objects.available()
 
     for order in orders:
         order.restaurants = set()
-
         for order_item in order.items.all():
             product_restaurants = [
                 rest_item.restaurant for rest_item in restaurant_menu_items
@@ -111,6 +149,11 @@ def view_orders(request):
                 order.restaurants = set(product_restaurants)
                 continue
             order.restaurants &= set(product_restaurants)
+        for restaurant in order.restaurants:
+            order_coords = get_coordinates(order.address)
+            restaurant_coords = get_coordinates(restaurant.address)
+            restaurant_distance = distance(order_coords, restaurant_coords).km
+            restaurant.name = f'{restaurant.name} - {round(restaurant_distance, 3)} км'
 
     return render(request, template_name='order_items.html', context={
         'order_items': orders,

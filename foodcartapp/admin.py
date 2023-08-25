@@ -4,7 +4,7 @@ from django.templatetags.static import static
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from .models import Product, Order, ProductOrderItem
+from .models import Product, Order, ProductOrderItem, Place
 from .models import ProductCategory
 from .models import Restaurant
 from .models import RestaurantMenuItem
@@ -128,4 +128,9 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(ProductOrderItem)
 class ProductOrderItemAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Place)
+class DistanceAdmin(admin.ModelAdmin):
     pass
