@@ -220,7 +220,6 @@ class Order(models.Model):
         verbose_name='Cпособ оплаты',
         max_length=20,
         choices=PAYMENT,
-        default='CASH',
         db_index=True
     )
     comment = models.TextField(
