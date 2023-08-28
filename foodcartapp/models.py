@@ -207,8 +207,7 @@ class Order(models.Model):
     )
     address = models.CharField(
         verbose_name='Адрес доставки',
-        max_length=200,
-        default=''
+        max_length=200
     )
     status = models.CharField(
         verbose_name='Статус заказа',
@@ -227,8 +226,7 @@ class Order(models.Model):
     comment = models.TextField(
         verbose_name='Комментарий',
         max_length=1000,
-        blank=True,
-        default=''
+        blank=True
     )
     created_date = models.DateTimeField(
         verbose_name="Дата создания",
@@ -281,8 +279,7 @@ class ProductOrderItem(models.Model):
         Order,
         related_name='items',
         on_delete=models.CASCADE,
-        verbose_name='заказ',
-        default=0
+        verbose_name='заказ'
     )
     product = models.ForeignKey(
         Product,
@@ -298,8 +295,7 @@ class ProductOrderItem(models.Model):
         'цена',
         max_digits=8,
         decimal_places=2,
-        validators=[MinValueValidator(0)],
-        default=0
+        validators=[MinValueValidator(0)]
     )
 
     class Meta:
