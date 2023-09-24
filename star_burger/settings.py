@@ -88,14 +88,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'star_burger_db',
-        'USER': 'star_burger',
-        'PASSWORD': 'F2L4m15',
-        'HOST': 'localhost',
-        'PORT': '',
-    }
+    'default': dj_database_url.parse(
+        env.str("DEFAULT_DB"),
+        conn_max_age=600
+    ),
 }
 
 AUTH_PASSWORD_VALIDATORS = [
