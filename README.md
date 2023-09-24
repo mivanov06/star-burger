@@ -1,6 +1,6 @@
-# Сайт доставки еды Star Burger
+# Сайт доставки еды Star Burger ([burger.mivanov06.ru](https://burger.mivanov06.ru/))
 
-Это сайт сети ресторанов Star Burger. Здесь можно заказать превосходные бургеры с доставкой на дом.
+Это [сайт](https://burger.mivanov06.ru/) сети ресторанов Star Burger. Здесь можно заказать превосходные бургеры с доставкой на дом.
 
 ![скриншот сайта](https://dvmn.org/filer/canonical/1594651635/686/)
 
@@ -54,6 +54,36 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
+Установите PostgreSQL:
+```sh
+sudo apt-get update
+sudo apt-get install python-pip python3-dev libpq-dev postgresql postgresql-contrib
+```
+Создайте базу данных:
+```sh
+sudo su - postgres
+psql
+CREATE DATABASE star-burger-db;
+```
+
+Создайте пользователя для доступа к базе данных и предоставьте ему необходимые права:
+```sh
+CREATE USER staruser WITH PASSWORD 'password';
+ALTER ROLE staruser SET client_encoding TO 'utf8';
+ALTER ROLE staruser SET default_transaction_isolation TO 'read committed';
+ALTER ROLE staruser SET timezone TO 'UTC';
+GRANT ALL PRIVILEGES ON DATABASE star-burger-db TO staruser;
+\q
+exit
+```
+
+Создайте структуру базы данных командой:
+
+```sh
+python manage.py migrate
+```
+
+
 Определите переменную окружения `SECRET_KEY`. Создать файл `.env` в каталоге `star_burger/` и положите туда такой код:
 ```sh
 SECRET_KEY=django-insecure-0if40nf4nf93n4
@@ -62,11 +92,22 @@ SECRET_KEY=django-insecure-0if40nf4nf93n4
 ```sh
 YANDEX_GEO_KEY =xxxxxxx-xxxx-xxxx-xxxxx-xxxxxxxxxx
 ```
+Данные для доступа к Roolbar
 
-Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
+`ROLLBAR_ENV` - значение 'development' для режима разработки или 'production' для боевого режима
 
 ```sh
-python manage.py migrate
+ROLLBAR_TOKEN=xxxxxxxxxxxxxxxx
+ROLLBAR_ENV=xxxxxxxxxxxxxxxx
+```
+
+Данные для доступа к БР PostgreSQL в виде
+```sh
+DEFAULT_DB=postgres://staruser:password@localhost/star-burger-db
+```
+Определите DEBUG режим
+```sh
+DEBUG=False
 ```
 
 Запустите сервер:
@@ -145,12 +186,12 @@ Parcel будет следить за файлами в каталоге `bundle
 ```sh
 ./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 ```
+## Автоматическое обновление кода на сервере
 
-Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
-
-- `DEBUG` — дебаг-режим. Поставьте `False`.
-- `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.
-- `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
+Используйте bash скрипт в папке `star-burger` для быстрого обновления кода:
+```
+./deploy_star_burger.sh
+```
 
 ## Цели проекта
 
