@@ -38,3 +38,4 @@ curl --request POST --url https://api.rollbar.com/api/1/deploy \
             '
 
 echo "Deploy has successefully finished"
+
