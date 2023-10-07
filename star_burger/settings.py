@@ -1,6 +1,7 @@
 import os
 
 import dj_database_url
+from django.core.management.utils import get_random_secret_key
 
 from environs import Env
 
@@ -15,8 +16,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 YANDEX_GEO_KEY = env('YANDEX_GEO_KEY')
 
-SECRET_KEY = env.str('SECRET_KEY')
+SECRET_KEY = env.str('SECRET_KEY', default=get_random_secret_key())
 DEBUG = env.bool('DEBUG', False)
+ROLLBAR_TOKEN = env('ROLLBAR_TOKEN', False)
+
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
 
@@ -131,9 +134,11 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "bundles"),
 ]
 
-ROLLBAR = {
-    'access_token': env.str('ROOLBAR_TOKEN'),
-    'environment': env.str('ROLLBAR_ENV', 'production'),
-    'code_version': '1.0',
-    'root': BASE_DIR,
-}
+
+if ROLLBAR_TOKEN:
+    ROLLBAR = {
+        'access_token': ROLLBAR_TOKEN,
+        'environment': env('ROLLBAR_ENV', 'production'),
+        'code_version': '1.0',
+        'root': BASE_DIR,
+    }
